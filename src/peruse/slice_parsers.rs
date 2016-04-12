@@ -52,7 +52,7 @@ pub fn matcher<T: Clone, U, F: 'static + Fn(T) -> Option<U>>(f: F) -> MatchParse
 
 
 
-/// A LiteralParser looks for an exact match of the given item at the beginning
+/// A `LiteralParser` looks for an exact match of the given item at the beginning
 // of the slice
 #[derive(Clone)]
 pub struct LiteralParser< T: Eq + Clone> {
@@ -65,12 +65,12 @@ impl<T: Eq + Clone> Parser for LiteralParser< T> {
 
   fn parse<'a>(&self, data: &'a [T]) -> ParseResult<&'a [T], T> {
     if data.len() < 1 {
-      return Err(format!("ran out of data"))
+      return Err("ran out of data".into())
     }
     if data[0] == self.literal {
       Ok((data[0].clone(), &data[1..]))
     } else {
-      Err(format!("Literal mismatch"))
+      Err("Literal mismatch".into())
     }
   }
 }
@@ -90,11 +90,11 @@ impl<T: Clone, U, F: Fn(T) -> Option<U>> Parser for MatchParser<T,U, F> {
 
   fn parse<'a>(&self, data: &'a [T]) -> ParseResult<&'a [T], Self::O> {
     if data.len() < 1 {
-      return Err(format!("ran out of data"))
+      return Err("ran out of data".into())
     }
     match (self.matcher)(data[0].clone()) {
       Some(u) => Ok((u, &data[1..])),
-      None    => Err(format!("Match failed"))
+      None    => Err("Match failed".into())
     }
   }
 }
@@ -109,5 +109,3 @@ impl<T: Clone, U, F: Fn(T) -> Option<U>> Clone for MatchParser<T,U, F> {
   }
 
 }
-
-  

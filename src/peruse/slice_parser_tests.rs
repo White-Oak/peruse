@@ -1,3 +1,4 @@
+#![cfg(test)]
 use parsers::*;
 use slice_parsers::*;
 
@@ -121,7 +122,7 @@ let arr = [1, 0, 1, 0, 1, 0];
 
 let p4 = lit(1).then(lit(0)).repeat().map(|v| v.len());
 
-println!("{:?}", p4.parse(&arr)); 
+println!("{:?}", p4.parse(&arr));
 //Ok((3, []))
 
 //lastly we can define a recursive parser in a static function
@@ -209,14 +210,14 @@ fn test_oneof() {
 
   //this has to be a long list to make sure we don't hit an issue with rustc taking forever
   let p = one_of(vec![
-    lit(1), 
-    lit(3), 
-    lit(5), 
-    lit(7), 
-    lit(9), 
-    lit(11), 
-    lit(13), 
-    lit(15), 
+    lit(1),
+    lit(3),
+    lit(5),
+    lit(7),
+    lit(9),
+    lit(11),
+    lit(13),
+    lit(15),
     lit(17),
     lit(19),
     lit(21),

@@ -5,7 +5,7 @@ use regex::{Captures, Regex};
 use std::rc::Rc;
 
 pub type StringParser<T> = Parser<I=str, O=T>;
-    
+
 /// A string Parser that attempts to consume the given regex
 #[derive(Clone)]
 pub struct RegexLiteralParser<T: Clone> {
@@ -18,7 +18,7 @@ impl<T: Clone> Parser for RegexLiteralParser<T> {
   type O = T;
 
   fn parse<'a>(&self, data: &'a str) -> ParseResult<&'a str, Self::O>{
-    self.regex.find(data).map(|(_, e)| (self.literal.clone(), &data[e..])).ok_or(format!("regex literal match fail"))
+    self.regex.find(data).map(|(_, e)| (self.literal.clone(), &data[e..])).ok_or("regex literal match fail".into())
   }
 }
 
@@ -39,9 +39,9 @@ impl<T, F: Fn(Captures) -> T> Parser for RegexCapturesParser<T, F> {
     match self.regex.captures(data) {
       Some(caps) => match caps.pos(0) {
         Some((_, e)) => Ok(((self.f)(caps), &data[e..])),
-        None => Err(format!("No Match"))
+        None => Err("No Match".into())
       },
-      None => Err(format!("No Match"))
+      None => Err("No Match".into())
     }
   }
 }
@@ -70,4 +70,3 @@ pub fn capture<T, F: 'static + Fn(Captures) -> T>(reg: &str, f: F) -> RegexCaptu
 
   RegexCapturesParser{regex: regex, f: Rc::new(Box::new(f))}
 }
-

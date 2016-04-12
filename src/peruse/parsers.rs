@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 /////////     TRAITS/TYPES       //////////
 
-/// The base trait for any parser.  
+/// The base trait for any parser.
 pub trait Parser  {
   type I: ?Sized;
   type O;
@@ -36,7 +36,7 @@ pub trait ParserCombinator : Parser + Clone {
   fn repeat(&self) -> RepeatParser<Self> {
     RepeatParser{parser: self.clone()}
   }
-  
+
   /// Map the value of this parser
   fn map<T, F: 'static + Fn(Self::O) -> T>(&self, f: F) -> MapParser<Self::I, Self, T> {
     MapParser{parser: self.clone(), mapper: Rc::new(Box::new(f))}
@@ -50,7 +50,7 @@ pub trait ParserCombinator : Parser + Clone {
 
 }
 
-/// The result of a parser's attempt to parse input data.  
+/// The result of a parser's attempt to parse input data.
 ///
 /// A successful result contains the output value of the parser along with a new input value that
 /// can be consumed by subsequent parsers.  A failed result contains an error message.
@@ -89,7 +89,7 @@ pub fn opt<T: Parser>(t: T) -> OptionParser<T> {
 /// ```
 /// # use peruse::parsers::*;
 /// # use peruse::slice_parsers::lit;
-/// 
+///
 /// fn recurse() -> Box<Parser<I=[i32], O=i32>> {
 ///   let end = lit(1).map(|_| 0);
 ///   let rec = lit(0).then_r(recursive(|| recurse())).map(|t| t + 1);
@@ -130,7 +130,7 @@ pub fn repsep<I: ?Sized, A: Parser<I=I>, B: Parser<I=I>>(rep: A, sep: B) -> RepS
 /// box them using the `boxed` function.
 ///
 /// # Examples
-/// 
+///
 /// Here both parsers have the same structure, and can be used unboxed
 ///
 /// ```no_run
@@ -142,7 +142,7 @@ pub fn repsep<I: ?Sized, A: Parser<I=I>, B: Parser<I=I>>(rep: A, sep: B) -> RepS
 /// let parser = one_of(vec![p1, p2]);
 /// parser.parse(&input);
 /// ```
-/// 
+///
 /// These parsers have different structure, thus different types, so they need to be boxed to be
 /// used.
 ///
@@ -175,8 +175,8 @@ pub fn boxed<I: ?Sized,O, P:'static + Parser<I=I, O=O> >(p: P) -> BoxedParser<I,
   BoxedParser{parser: Rc::new(Box::new(p))}
 }
 
-/// Create a parser that can skip certain elements.    
-/// This parser will try to skip as much as possible of `to_skip` elements, then match `to_keep` elements 
+/// Create a parser that can skip certain elements.
+/// This parser will try to skip as much as possible of `to_skip` elements, then match `to_keep` elements
 /// and then again skip as much as possible of `to_skip` elements.
 ///
 /// #Examples
@@ -188,9 +188,9 @@ pub fn boxed<I: ?Sized,O, P:'static + Parser<I=I, O=O> >(p: P) -> BoxedParser<I,
 /// let parser = keep_skip(keep, skip).repeat();
 /// let input = [1, 4, 2, 1, 4, 4, 3, 1, 5];
 /// assert_eq!(parser.parse(&input), Ok((vec![4, 4, 4, 3], &input[8..])));
-/// //Ok(([4, 4, 4, 3], [5])) 
+/// //Ok(([4, 4, 4, 3], [5]))
 /// ```
-pub fn keep_skip<I: ?Sized,O, P: ParserCombinator<I=I, O=O>, S: ParserCombinator<I=I>>(to_keep: P, to_skip: S) 
+pub fn keep_skip<I: ?Sized,O, P: ParserCombinator<I=I, O=O>, S: ParserCombinator<I=I>>(to_keep: P, to_skip: S)
   -> SkippingParser<I, O, P, S>{
     SkippingParser{to_keep: to_keep, to_skip: to_skip}
 }
@@ -220,7 +220,7 @@ impl<C: ?Sized, A: Parser<I=C>, B: Parser<I=C>> Parser for ChainedParser<A, B> {
 }
 
 impl<C: ?Sized, A: ParserCombinator<I=C>, B: ParserCombinator<I=C>>  Clone for ChainedParser<A, B> {
-  
+
   fn clone(&self) -> Self {
     ChainedParser{first: self.first.clone(), second: self.second.clone()}
   }
@@ -237,12 +237,12 @@ pub struct RepeatParser<P: Parser> {
 impl<T: Parser> Parser for RepeatParser<T> {
   type I = T::I;
   type O = Vec<T::O>;
-  
+
   fn parse<'a>(&self, data: &'a Self::I) -> ParseResult<&'a Self::I, Self::O> {
     let mut remain = data;
     let mut v: Vec<T::O> = Vec::new();
     loop {
-      match self.parser.parse(remain.clone()) {
+      match self.parser.parse(remain) {
         Ok((result, rest)) => {
           v.push(result);
           remain = rest;
@@ -299,9 +299,9 @@ impl<I:?Sized,O, S: Parser<I=I,O=O>, T: Parser<I=I,O=O>> Parser for OrParser<S,T
   type O = O;
 
   fn parse<'a>(&self, data: &'a Self::I) -> ParseResult<&'a Self::I, Self::O> {
-    match self.first.parse(data.clone()) {
+    match self.first.parse(data) {
       Ok((a, d2)) => Ok((a, d2)),
-      Err(_) => match self.second.parse(data.clone()) {
+      Err(_) => match self.second.parse(data) {
         Ok((b, remain)) => Ok((b, remain)),
         Err(err) => Err(err)
       }
@@ -321,14 +321,14 @@ impl<I:?Sized,O, S: ParserCombinator<I=I,O=O>, T: ParserCombinator<I=I,O=O>> Par
 
 #[derive(Clone)]
 pub struct OptionParser<P: Parser> {
-  parser: P 
+  parser: P
 }
 impl<P: Parser> Parser for OptionParser<P> {
   type I = P::I;
   type O = Option<P::O>;
 
   fn parse<'a>(&self, data: &'a Self::I) -> ParseResult<&'a Self::I, Self::O> {
-    match self.parser.parse(data.clone()) {
+    match self.parser.parse(data) {
       Ok((result, rest))  => Ok((Some(result), rest)),
       Err(_)              => Ok((None, data)),
     }
@@ -380,7 +380,7 @@ impl<I: ?Sized, A: Parser<I=I>, B: Parser<I=I>> Parser for RepSepParser<A,B> {
       match self.rep.parse(remain) {
         Ok((result, rest)) => {
           v.push(result);
-          match self.sep.parse(rest.clone()) {
+          match self.sep.parse(rest) {
             Ok((_, rest2)) => {
               remain = rest2
             }
@@ -404,7 +404,7 @@ impl<I: ?Sized, A: Parser<I=I>, B: Parser<I=I>> Parser for RepSepParser<A,B> {
 impl<I: ?Sized, A: ParserCombinator<I=I>, B: ParserCombinator<I=I>> ParserCombinator for RepSepParser<A,B> {}
 
 impl<I: ?Sized, A: ParserCombinator<I=I>, B: ParserCombinator<I=I>> Clone for RepSepParser<A,B> {
-  
+
   fn clone(&self) -> Self {
     RepSepParser{rep : self.rep.clone(), sep: self.sep.clone(), min_reps: self.min_reps}
   }
@@ -425,13 +425,13 @@ impl<T: Parser> Parser for OneOfParser<T> {
   type O = T::O;
 
   fn parse<'a>(&self, data: &'a Self::I) -> ParseResult<&'a Self::I, Self::O> {
-    for p in self.options.iter() {
-      let r = p.parse(data.clone());
+    for p in &self.options {
+      let r = p.parse(data);
       if r.is_ok() {
         return r;
       }
     }
-    Err(format!("All options failed"))
+    Err("All options failed".into())
   }
 
 }
@@ -474,7 +474,7 @@ pub struct SkippingParser<I: ?Sized, O, P: ParserCombinator<I=I, O=O>, S: Parser
 }
 
 impl<I: ?Sized, O, P: ParserCombinator<I=I, O=O>, S: ParserCombinator<I=I>> Parser for SkippingParser<I, O, P, S>{
-    
+
     type I = I;
     type O = O;
 
